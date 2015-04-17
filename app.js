@@ -198,7 +198,7 @@ app.get('/auth/instagram',
     // function will not be called.
   });
 
-app.get('/auth/facebook',passport.authenticate('facebook',{ scope: ['user_likes'] }), function(req, res) {
+app.get('/auth/facebook',passport.authenticate('facebook',{ scope: ['user_likes','user_posts'] }), function(req, res) {
 });
   
 
@@ -229,24 +229,24 @@ query.findOne(function (err, user) {
     if (err) return handleError(err);
     if (user) {
       graph.setAccessToken(user.access_token);
-      var params = { fields: "feed" };
-      graph.get("/me", params,  function(err, feedResponse) {
-
-       
-       // graph.get("/"+ req.user.id +"/feed/", function(err, res){
-      //console.log(user);
-            //graph.get("/me?fields=feed", function(err, res) {
-         console.log(feedResponse); 
-          
+        graph.get("/me?fields=feed", function(err, reply){
+          var postArr = data.map(function(reply) {
+            //create temporary json object
+            tempJSON = {};
+            tempJSON.story = reply.story.text;
+            //tempJSON.= reply.;
+            //insert json object into image array
+            return tempJSON;
+         //console.log(reply.feed.data);  
       });
-      //res.render('loggedinuser');
+      res.render('loggedinuser', {posts: PostArr});
       // graph.get("me?fields=likes{posts.limit(10)}", function(err, res) {
       // console.log(res); 
       //});
-    }
-  });
+    });
+}
 });
-
+});
 
 
 
