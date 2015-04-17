@@ -2,7 +2,7 @@
 var express = require('express');
 var passport = require('passport');
 var InstagramStrategy = require('passport-instagram').Strategy;
-var  FacebookStrategy = require('passport-facebook').Strategy;
+var FacebookStrategy = require('passport-facebook').Strategy;
 var http = require('http');
 var path = require('path');
 var handlebars = require('express-handlebars');
@@ -148,6 +148,10 @@ app.get('/login', function(req, res){
   res.render('login', { user: req.user });
 });
 
+//app.get('/loggedinuser', function(req, res){
+  //res.render('loggedinuser', { user: req.user });
+//});
+
 app.get('/account', ensureAuthenticated, function(req, res){
   res.render('account', {user: req.user});
 });
@@ -193,38 +197,8 @@ app.get('/auth/instagram',
     // The request will be redirected to Instagram for authentication, so this
     // function will not be called.
   });
-app.get('/auth/facebook',passport.authenticate('facebook', { scope: ['user_likes'] }));
-app.get('/auth/facebook',passport.authenticate('facebook'), function(req, res) {
 
-  // we don't have a code yet
-  // so we'll redirect to the oauth dialog
-  if (!req.query.code) {
-    var authUrl = graph.getOauthUrl({
-        "client_id":     client_id
-      , "redirect_uri":  redirect_uri
-      , "scope":         scope
-    });
-
-    if (!req.query.error) { //checks whether a user denied the app facebook login/permissions
-      res.redirect(authUrl);
-    } else {  //req.query.error == 'access_denied'
-      res.send('access denied');
-    }
-    return;
-  }
-
-  // code is set
-  // we'll send that and get the access token
-  graph.authorize({
-      "client_id":      client_id
-    , "redirect_uri":   redirect_uri
-    , "client_secret":  client_secret
-    , "code":           req.query.code
-  }, function (err, facebookRes) {
-    res.redirect('/loggedinuser');
-  });
-
-
+app.get('/auth/facebook',passport.authenticate('facebook',{ scope: ['user_likes'] }), function(req, res) {
 });
   
 
@@ -250,17 +224,25 @@ app.get('/logout', function(req, res){
 
 
 app.get('/loggedinuser',ensureAuthenticated, function(req, res) {
-var query  = models.User.where({ name: req.user.displayname });
-query.findOne(function (err, user) {
+var query  = models.User.where({ id: req.user.id });
+query.findOne(function (err, user) { 
     if (err) return handleError(err);
     if (user) {
-     graph.setAccessToken("CAACEdEose0cBAGhZCof7CPSpR77q1a782jRSxLag1kkTRYoZAZCZCuc4YtR8nFw527eesj87eL2o2bZA8dYTwxA6PBwdV2LuQEMQBrKZCdaFxY1qIvjaRwxZBJ1epiPBzSZCZAYwkkFzM7eSUltnZBuMikEZCURPUxlUy4ZAdHLTIZBRYurd1telcxRBDZALBKZBhTZAJiiUcbDfYN2FiTYlx8hYH6oxDlJB25JBkz8ZD");
-      graph.get("me/posts", function(err, res) {
-      console.log(res); 
+      graph.setAccessToken(user.access_token);
+      var params = { fields: "feed" };
+      graph.get("/me", params,  function(err, feedResponse) {
+
+       
+       // graph.get("/"+ req.user.id +"/feed/", function(err, res){
+      //console.log(user);
+            //graph.get("/me?fields=feed", function(err, res) {
+         console.log(feedResponse); 
+          
       });
-      graph.get("me?fields=likes{posts.limit(10)}", function(err, res) {
-      console.log(res); 
-      });
+      //res.render('loggedinuser');
+      // graph.get("me?fields=likes{posts.limit(10)}", function(err, res) {
+      // console.log(res); 
+      //});
     }
   });
 });
