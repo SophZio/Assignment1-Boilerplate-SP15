@@ -171,7 +171,7 @@ app.get('/account', ensureAuthenticated, function(req, res){
 });
 
 app.get('/photos', ensureAuthenticatedInstagram, function(req, res){
-  var query  = models.User.where({ name: req.user.userName });
+  var query  = models.User.where({ ig_id: req.user.id });
   query.findOne(function (err, user) {
     if (err) return handleError(err);
     if (user) {
@@ -242,20 +242,17 @@ query.findOne(function (err, user) {
     if (err) return handleError(err);
     if (user) {
       graph.setAccessToken(user.fb_access_token);
-        graph.get("me/?fields=photos", function(err, res){
-          //console.log(res.photos);
-          var data1 = res.photos;
-          //console.log(data1);
-          var photoArr = data1.map(function(item) {
+        graph.get("me/photos", function(err, photos){
+          //console.log(res);
+        
+          var photoArr = photos.data.map(function(item) {
             //create temporary json object
             tempJSON = {};
-            tempJSON.url = item.images.source.url ;
+            tempJSON.url = item.source;
             //insert json object into image array
            return tempJSON;
-         
       });
-     // res.render('loggedinuser', {fb_photos: ImageArr});
-      
+      res.render('loggedinuser', {fb_photos: photoArr});
     });
 }
 });

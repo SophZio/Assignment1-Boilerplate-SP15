@@ -1,7 +1,24 @@
 <style>
-body{
-	background-image: url("sunset.jpg");
-	background-size: 110%;
-    background-repeat: no-repeat;
-	}
+body{  background-image: url("sunset.jpg");
+  background-size: 270%;
+  background-repeat: repeat;
+  background-color:  #66E0FF ;
+  text-align: center;
+  }
+	.thumbnail{
+  border-radius: 15px;
+}
+.img-responsive{
+  border-radius: 15px;
+}
 </style>
+
+<div class=photo>
+  {{#each fb_photos}}
+    <div class="thumbnail">
+      <img src="{{url}}" class="img-responsive" class="img hashtag-img">
+    </div>
+     {{/each}}
+  
+  </div>
+
