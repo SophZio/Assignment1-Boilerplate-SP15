@@ -69,8 +69,8 @@ passport.use(new InstagramStrategy({
     // asynchronous verification, for effect...
     models.User.findOrCreate({
       "name": profile.userName,
-      "id": profile.id,
-      "access_token": accessToken 
+      "ig_id": profile.id,
+      "ig_access_token": accessToken 
     }, function(err, user, created) {
       
       // created will be true here
@@ -95,9 +95,9 @@ passport.use(new FacebookStrategy({
   },
   function(accessToken, refreshToken, profile, done) {
     models.User.findOrCreate({ 
-            "id": profile.id, 
+            "fb_id": profile.id, 
             "name": profile.displayName,
-            "access_token": accessToken
+            "fb_access_token": accessToken
           } , function(err, user, created) {
         models.User.findOrCreate({}, function(err, user, created) {
         process.nextTick(function () {
@@ -139,6 +139,20 @@ function ensureAuthenticated(req, res, next) {
   res.redirect('/login');
 }
 
+function ensureAuthenticatedInstagram(req, res, next) {
+  if (req.isAuthenticated() && !req.user.fb_id) { 
+    return next(); 
+  }
+  res.redirect('/login');
+}
+
+function ensureAuthenticatedFacebook(req, res, next) {
+  if (req.isAuthenticated() && !req.user.ig_id) { 
+    return next(); 
+  }
+  res.redirect('/login');
+}
+
 //routes
 app.get('/', function(req, res){
   res.render('login');
@@ -156,14 +170,14 @@ app.get('/account', ensureAuthenticated, function(req, res){
   res.render('account', {user: req.user});
 });
 
-app.get('/photos', ensureAuthenticated, function(req, res){
-  var query  = models.User.where({ name: req.user.displayname });
+app.get('/photos', ensureAuthenticatedInstagram, function(req, res){
+  var query  = models.User.where({ name: req.user.userName });
   query.findOne(function (err, user) {
     if (err) return handleError(err);
     if (user) {
       // doc may be null if no document matched
       Instagram.users.self({
-        access_token: user.access_token,
+        access_token: user.ig_access_token,
         complete: function(data) {
           //Map will iterate through the returned data obj
           var imageArr = data.map(function(item) {
@@ -198,7 +212,7 @@ app.get('/auth/instagram',
     // function will not be called.
   });
 
-app.get('/auth/facebook',passport.authenticate('facebook',{ scope: ['user_likes','user_posts'] }), function(req, res) {
+app.get('/auth/facebook',passport.authenticate('facebook',{ scope: ['user_likes','user_posts', 'user_photos'] }), function(req, res) {
 });
   
 
@@ -212,10 +226,9 @@ app.get('/auth/facebook/callback',
 //   login page.  Otherwise, the primary route function function will be called,
 //   which, in this example, will redirect the user to the home page.
 app.get('/auth/instagram/callback', 
-  passport.authenticate('instagram', { failureRedirect: '/login'}),
-  function(req, res) {
-    res.redirect('/photos');
-  });
+  passport.authenticate('instagram', { successRedirect: '/account',
+                                      failureRedirect: '/login'})
+  );
 
 app.get('/logout', function(req, res){
   req.logout();
@@ -223,26 +236,26 @@ app.get('/logout', function(req, res){
 });
 
 
-app.get('/loggedinuser',ensureAuthenticated, function(req, res) {
-var query  = models.User.where({ id: req.user.id });
-query.findOne(function (err, user) { 
+app.get('/loggedinuser',ensureAuthenticatedFacebook, function(req, res) {
+var query  = models.User.where({ fb_id: req.user.id });
+query.findOne(function (err, user) {
     if (err) return handleError(err);
     if (user) {
-      graph.setAccessToken(user.access_token);
-        graph.get("/me?fields=feed", function(err, reply){
-          var postArr = data.map(function(reply) {
+      graph.setAccessToken(user.fb_access_token);
+        graph.get("me/?fields=photos", function(err, res){
+          //console.log(res.photos);
+          var data1 = res.photos;
+          //console.log(data1);
+          var photoArr = data1.map(function(item) {
             //create temporary json object
             tempJSON = {};
-            tempJSON.story = reply.story.text;
-            //tempJSON.= reply.;
+            tempJSON.url = item.images.source.url ;
             //insert json object into image array
-            return tempJSON;
-         //console.log(reply.feed.data);  
+           return tempJSON;
+         
       });
-      res.render('loggedinuser', {posts: PostArr});
-      // graph.get("me?fields=likes{posts.limit(10)}", function(err, res) {
-      // console.log(res); 
-      //});
+     // res.render('loggedinuser', {fb_photos: ImageArr});
+      
     });
 }
 });
